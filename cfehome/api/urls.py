@@ -8,4 +8,5 @@ urlpatterns = [
     path('auth/', obtain_auth_token),
     path('',views.api_home),
     path('products/', include('products.urls')),
+    path('v2/', include('cfehome.routers')),
 ]

@@ -3,19 +3,22 @@ from rest_framework import generics,mixins,authentication,permissions
 from rest_framework.generics import get_object_or_404
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
-from .permissions import IsStaffEditorPermission
+from api.mixins import StaffEditorPermissionMixin
 from api.authentication import TokenAuthentication
 # Create your views here.
 from .models import Product
 from .serializers import ProductSerializer
+from .viewsets import ProductGenericViewSet
 
-class ProductListCreateAPIView(generics.ListCreateAPIView):
+class ProductListCreateAPIView(StaffEditorPermissionMixin
+    ,generics.ListCreateAPIView):
+
     queryset = Product.objects.all()
     serializer_class = ProductSerializer
     authentication_classes = [authentication.SessionAuthentication,TokenAuthentication]
-    permission_classes = [IsStaffEditorPermission]
 
-product_list_api_view = ProductListCreateAPIView.as_view()
+
+product_list_create_api_view = ProductListCreateAPIView.as_view()
 
 class ProductDestroyAPIView(generics.DestroyAPIView):
     queryset = Product.objects.all()
@@ -37,8 +40,18 @@ class ProductUpdateAPIView(generics.UpdateAPIView):
             instance.content=instance.title
 product_Update_api_view = ProductUpdateAPIView.as_view()
 
+class ProductDetailAPIView(
+StaffEditorPermissionMixin
+,generics.RetrieveAPIView):
+    queryset = Product.objects.all()
+    serializer_class = ProductSerializer
+    lookup_field = 'pk'
+
+product_detail_view = ProductDetailAPIView.as_view()
+
+
 @api_view(['GET', 'POST'])
-def product_alt_view(request, *args, **kwargs):
+def product_detail_view(request, *args, **kwargs):
     method=request.method
     pk=kwargs.get('pk')
     if method == 'GET':
@@ -65,9 +78,7 @@ def product_alt_view(request, *args, **kwargs):
 
 class ProductMixinView(
     mixins.CreateModelMixin,
-    mixins.ListModelMixin,
-    mixins.RetrieveModelMixin,
-    generics.GenericAPIView,
+    ProductGenericViewSet
 ):
     queryset = Product.objects.all()
     serializer_class = ProductSerializer
@@ -83,7 +94,7 @@ class ProductMixinView(
     def post(self,request,*args,**kwargs):
         return self.create(request,*args,**kwargs)
 
-product_mixin_view = ProductMixinView.as_view()
+product_mixin_view = ProductMixinView.as_view({'get':'list'})
 
 
 
