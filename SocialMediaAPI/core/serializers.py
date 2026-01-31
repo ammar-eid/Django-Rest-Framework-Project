@@ -15,7 +15,6 @@ class PostSerializer(serializers.ModelSerializer):
 
     def get_is_liked(self,obj):
         user=self.context['request'].user
-
         if user.is_authenticated:
             return obj.likes.filter(user=user).exists()
         return False
