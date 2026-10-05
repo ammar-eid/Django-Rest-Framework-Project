@@ -10,6 +10,8 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from .models import Post,Like
 from django.contrib.auth.models import User
+
+from .services import analyze_content
 # Create your views here.
 
 class PostViewSet(viewsets.ModelViewSet):
@@ -25,7 +27,17 @@ class PostViewSet(viewsets.ModelViewSet):
         return [permission() for permission in permission_classes]
 
     def perform_create(self, serializer):
-        serializer.save(author=self.request.user)
+        post = serializer.save(author=self.request.user)
+
+        score = analyze_content(post.content)
+
+        post.toxicity_score = score
+        if score > 0.7:
+            post.is_flagged = True
+            post.moderation_status = 'toxic'
+        else:
+            post.moderation_status = 'clean'
+        post.save()
 
     #for like or unlike for someone
     @action(detail=True, methods=['post'])
